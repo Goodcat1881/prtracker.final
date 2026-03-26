@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PR Impact Tracker — Soft Space</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --surface2: #1d1f24;
+    --border: #2a2d35;
+    --border-active: #3e4250;
+    --accent: #5b7cf6;
+    --accent-soft: rgba(91,124,246,0.12);
+    --accent-mid: rgba(91,124,246,0.25);
+    --text: #eeeef0;
+    --text-muted: #7a7e8e;
+    --text-dim: #4a4e5e;
+    --red: #f25c5c;
+    --red-soft: rgba(242,92,92,0.1);
+    --green: #3ecf8e;
+    --green-soft: rgba(62,207,142,0.1);
+    --yellow: #f0b429;
+    --yellow-soft: rgba(240,180,41,0.1);
+    --purple: #a78bfa;
+    --purple-soft: rgba(167,139,250,0.1);
+    --orange: #fb923c;
+    --orange-soft: rgba(251,146,60,0.1);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 32px 20px 80px; }
+  .shell { max-width: 860px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .header { display: flex; align-items: center; gap: 14px; margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .logo-mark { flex-shrink: 0; }
+  .logo-mark svg { display: block; }
+  .header-text h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+  .header-text p { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .header-badge { margin-left: auto; font-size: 10px; font-family: var(--mono); color: var(--text-dim); background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; flex-shrink: 0; }
+
+  /* ── Cards ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 16px; transition: border-color 0.2s; }
+  .card:focus-within { border-color: var(--border-active); }
+  .card-label { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .card-label .num { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-mid); border-radius: 4px; padding: 2px 7px; }
+  .card-label .title { font-size: 13px; font-weight: 500; }
+  .card-label .hint { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+
+  /* ── Inputs ── */
+  textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; padding: 14px; resize: vertical; outline: none; transition: border-color 0.2s; min-height: 110px; }
+  textarea::placeholder { color: var(--text-dim); }
+  textarea:focus { border-color: var(--accent); background: #191c22; }
+  input[type="text"] { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.6; padding: 10px 12px; outline: none; transition: border-color 0.2s; }
+  input[type="text"]::placeholder { color: var(--text-dim); }
+  input[type="text"]:focus { border-color: var(--accent); background: #191c22; }
+  select { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--sans); font-size: 13px; padding: 10px 12px; outline: none; transition: border-color 0.2s; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a7e8e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+  select:focus { border-color: var(--accent); }
+  select option { background: #1d1f24; }
+  .field-hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
+
+  /* ── Articles ── */
+  .article-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  .article-item { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; animation: slideIn 0.2s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .article-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.025); }
+  .article-num { font-family: var(--mono); font-size: 11px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; flex-shrink: 0; }
+  .delete-btn { width: 26px; height: 26px; background: none; border: none; color: var(--text-dim); cursor: pointer; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background 0.15s, color 0.15s; flex-shrink: 0; margin-left: auto; }
+  .delete-btn:hover { background: rgba(242,92,92,0.12); color: var(--red); }
+  .article-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; }
+  .article-fields .field-full { grid-column: 1 / -1; }
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-label { font-size: 11px; color: var(--text-muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* ── Toggle ── */
+  .toggle-pill { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+  .toggle-pill input[type="checkbox"] { display: none; }
+  .toggle-switch { width: 36px; height: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; position: relative; transition: all 0.2s; flex-shrink: 0; }
+  .toggle-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; background: var(--text-dim); border-radius: 50%; transition: all 0.2s; }
+  .toggle-pill input:checked + .toggle-switch { background: var(--accent-soft); border-color: var(--accent); }
+  .toggle-pill input:checked + .toggle-switch::after { left: 19px; background: var(--accent); }
+  .toggle-text { font-size: 13px; color: var(--text-muted); transition: color 0.2s; }
+  .toggle-pill input:checked ~ .toggle-text { color: var(--accent); }
+
+  .add-btn { display: flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: var(--radius-sm); border: 1px dashed var(--border); background: none; color: var(--text-muted); font-family: var(--sans); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+  .optional-badge { font-size: 10px; font-family: var(--mono); color: var(--text-dim); background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; margin-left: 4px; }
+
+  /* ── Submit ── */
+  .submit-area { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+  .analyze-btn { display: flex; align-items: center; gap: 10px; padding: 14px 28px; background: var(--accent); border: none; border-radius: var(--radius); color: #fff; font-family: var(--sans); font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+  .analyze-btn:hover { background: #4a6df0; transform: translateY(-1px); box-shadow: 0 4px 18px rgba(91,124,246,0.35); }
+  .analyze-btn:active { transform: translateY(0); }
+  .analyze-btn:disabled { background: var(--surface2); color: var(--text-dim); cursor: not-allowed; transform: none; box-shadow: none; }
+  .submit-note { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+
+  /* ── Loading ── */
+  .loading-overlay { display: none; flex-direction: column; align-items: center; gap: 16px; padding: 60px 20px; text-align: center; }
+  .loading-overlay.active { display: flex; }
+  .spinner { width: 36px; height: 36px; border: 2.5px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-title { font-size: 15px; font-weight: 500; }
+  .loading-sub { font-size: 13px; color: var(--text-muted); }
+
+  /* ── Error ── */
+  .error-banner { display: none; align-items: center; gap: 10px; padding: 12px 16px; background: rgba(242,92,92,0.08); border: 1px solid rgba(242,92,92,0.25); border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; color: var(--red); }
+  .error-banner.active { display: flex; }
+
+  /* ═══════════════════════════════════════════════════
+     REPORT
+  ═══════════════════════════════════════════════════ */
+  .report { display: none; margin-top: 32px; animation: fadeUp 0.4s ease; }
+  .report.active { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  .report-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 10px; }
+  .report-header-left { display: flex; align-items: center; gap: 10px; }
+  .report-header h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+  .report-header .dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; flex-shrink: 0; }
+  .pdf-btn { display: flex; align-items: center; gap: 7px; padding: 8px 14px; background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); font-family: var(--sans); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .pdf-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+  /* ── Metric cards ── */
+  .metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+  .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .metric-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+  .metric-value { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; color: var(--text); }
+  .metric-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ── Section containers ── */
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 14px; }
+  .section-title { font-size: 11px; font-weight: 500; color: var(--text-muted); font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .section-title-num { color: var(--accent); }
+  .scope-note { font-size: 12px; color: var(--text-dim); font-style: italic; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 14px; line-height: 1.5; }
+
+  /* ── Executive summary ── */
+  .summary-text { font-size: 14px; line-height: 1.8; color: var(--text); }
+
+  /* ── Coverage summary grid ── */
+  .coverage-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .cov-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .cov-block-label { font-size: 11px; font-family: var(--mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .cov-split { display: flex; gap: 16px; }
+  .cov-split-item { flex: 1; }
+  .cov-split-val { font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+  .cov-split-lbl { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .cov-split-item.green .cov-split-val { color: var(--green); }
+  .cov-split-item.purple .cov-split-val { color: var(--purple); }
+  .cov-split-item.blue .cov-split-val { color: var(--accent); }
+  .cov-split-item.yellow .cov-split-val { color: var(--yellow); }
+  .reach-placeholder { font-size: 13px; color: var(--text-dim); font-style: italic; padding: 6px 0; }
+
+  /* ── Outlet quality ── */
+  .outlet-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; transition: border-color 0.2s; }
+  .outlet-card:last-child { margin-bottom: 0; }
+  .outlet-card.open { border-color: var(--border-active); }
+  .outlet-summary { display: flex; align-items: center; gap: 8px; padding: 13px 16px; cursor: pointer; user-select: none; flex-wrap: wrap; }
+  .outlet-summary:hover { background: rgba(255,255,255,0.02); }
+  .outlet-name { font-size: 14px; font-weight: 500; }
+  .outlet-type-badge { font-size: 11px; font-family: var(--mono); padding: 3px 8px; border-radius: 4px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); }
+  .monitored-badge { font-size: 11px; font-family: var(--mono); padding: 3px 8px; border-radius: 4px; }
+  .monitored-badge.yes { color: var(--green); background: var(--green-soft); border: 1px solid rgba(62,207,142,0.2); }
+  .monitored-badge.no { color: var(--purple); background: var(--purple-soft); border: 1px solid rgba(167,139,250,0.2); }
+  .outlet-retention { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+  .outlet-retention-bar { width: 60px; height: 4px; background: var(--surface); border-radius: 2px; overflow: hidden; border: 1px solid var(--border); }
+  .outlet-retention-fill { height: 100%; border-radius: 2px; background: var(--accent); }
+  .outlet-retention-pct { font-size: 11px; font-family: var(--mono); color: var(--text-muted); width: 32px; text-align: right; }
+  .outlet-chevron { color: var(--text-dim); transition: transform 0.2s; flex-shrink: 0; }
+  .outlet-card.open .outlet-chevron { transform: rotate(180deg); }
+  .outlet-hook-preview { font-size: 12px; color: var(--text-dim); font-style: italic; width: 100%; padding: 0 16px 10px; margin-top: -4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .outlet-detail { border-top: 1px solid var(--border); padding: 16px; display: none; }
+  .outlet-card.open .outlet-detail { display: block; }
+  .analysis-block { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .analysis-block:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+  .analysis-block-title { font-size: 11px; color: var(--text-dim); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .analysis-text { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+  .hook-value { font-size: 13px; color: var(--accent); font-style: italic; line-height: 1.5; }
+  .organic-reason { font-size: 13px; color: var(--green); line-height: 1.6; font-style: italic; }
+  .align-score-placeholder { font-size: 12px; color: var(--text-dim); font-style: italic; }
+
+  /* ── Message penetration ── */
+  .angle-row { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .angle-row:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .angle-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+  .angle-bar-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .angle-bar-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
+  .angle-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+  .angle-bar-fill.high { background: var(--green); }
+  .angle-bar-fill.mid { background: var(--yellow); }
+  .angle-bar-fill.low { background: var(--red); }
+  .angle-pct { font-size: 12px; font-family: var(--mono); color: var(--text-muted); width: 36px; text-align: right; flex-shrink: 0; }
+  .angle-outlets { display: flex; flex-wrap: wrap; gap: 5px; }
+  .angle-tag { font-size: 11px; padding: 2px 7px; border-radius: 4px; font-family: var(--mono); }
+  .angle-tag.adopted { color: var(--green); background: var(--green-soft); border: 1px solid rgba(62,207,142,0.2); }
+  .angle-tag.partial { color: var(--yellow); background: var(--yellow-soft); border: 1px solid rgba(240,180,41,0.25); }
+  .angle-tag.dropped { color: var(--red); background: var(--red-soft); border: 1px solid rgba(242,92,92,0.2); }
+  .pattern-note { font-size: 13px; color: var(--text-muted); line-height: 1.7; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+
+  /* ── Tag pills (per-outlet detail) ── */
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .tag { font-size: 12px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; line-height: 1.4; }
+  .tag.added { color: var(--yellow); background: var(--yellow-soft); border-color: rgba(240,180,41,0.25); }
+  .tag.survived { color: var(--green); background: var(--green-soft); border-color: rgba(62,207,142,0.25); }
+  .tag.cut { color: var(--red); background: var(--red-soft); border-color: rgba(242,92,92,0.25); }
+
+  /* ── Audience response ── */
+  .gsc-placeholder { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .gsc-label { font-size: 11px; font-family: var(--mono); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .gsc-note { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ── Organic pickup highlights ── */
+  .pickup-card { background: var(--surface2); border: 1px solid rgba(167,139,250,0.2); border-radius: 10px; padding: 16px 18px; margin-bottom: 10px; }
+  .pickup-card:last-child { margin-bottom: 0; }
+  .pickup-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .pickup-outlet { font-size: 14px; font-weight: 500; }
+  .pickup-badge { font-size: 11px; font-family: var(--mono); color: var(--purple); background: var(--purple-soft); border: 1px solid rgba(167,139,250,0.2); border-radius: 4px; padding: 2px 7px; }
+  .pickup-row { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+  .pickup-field { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .pickup-field strong { color: var(--text); font-weight: 500; }
+  .pickup-field em { color: var(--green); font-style: italic; }
+  .pickup-placeholder { font-size: 12px; color: var(--text-dim); font-style: italic; }
+  .no-pickups { font-size: 13px; color: var(--text-dim); font-style: italic; padding: 4px 0; }
+
+  /* ── Key learnings ── */
+  .learnings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .learnings-col-label { font-size: 11px; font-family: var(--mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .learnings-col-label.back { color: var(--text-muted); }
+  .learnings-col-label.forward { color: var(--accent); }
+  .learning-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+  .learning-item:last-child { margin-bottom: 0; }
+  .learning-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .learning-dot.back { background: var(--text-dim); }
+  .learning-dot.forward { background: var(--accent); }
+  .learning-text { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ── LinkedIn section ── */
+  .linkedin-row { display: flex; flex-direction: column; gap: 10px; }
+  .linkedin-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .linkedin-caption { font-size: 13px; color: var(--text-muted); line-height: 1.6; font-style: italic; margin-bottom: 8px; }
+  .linkedin-insight { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+  .linkedin-insight strong { color: var(--accent); font-style: normal; }
+
+  @media (max-width: 640px) {
+    .metrics-row { grid-template-columns: 1fr 1fr; }
+    .article-fields { grid-template-columns: 1fr; }
+    .submit-area { flex-direction: column; align-items: flex-start; }
+    .report-header { flex-direction: column; align-items: flex-start; }
+    .coverage-grid { grid-template-columns: 1fr; }
+    .learnings-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Header with Soft Space branding -->
+  <div class="header">
+    <div class="logo-mark">
+      <svg width="44" height="44" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="92" height="92" rx="18" ry="18" stroke="white" stroke-width="7" fill="none"/>
+        <text x="50" y="43" text-anchor="middle" font-family="DM Sans, sans-serif" font-weight="700" font-size="26" fill="white">Soft_</text>
+        <text x="50" y="72" text-anchor="middle" font-family="DM Sans, sans-serif" font-weight="700" font-size="26" fill="white">Space</text>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>PR Impact Tracker</h1>
+      <p>Analyze how your press release was picked up, changed, and amplified</p>
+    </div>
+    <div class="header-badge">internal tool</div>
+  </div>
+
+  <div class="error-banner" id="errorBanner">
+    <span>⚠</span>
+    <span id="errorText">Something went wrong. Please try again.</span>
+  </div>
+
+  <div id="formArea">
+
+    <!-- 01 — PR Copy -->
+    <div class="card">
+      <div class="card-label">
+        <span class="num">01</span>
+        <span class="title">PR copy</span>
+        <span class="hint">The final press release you sent</span>
+      </div>
+      <textarea id="prCopy" placeholder="Paste the full text of your press release here." rows="7"></textarea>
+    </div>
+
+    <!-- 02 — Key angles -->
+    <div class="card">
+      <div class="card-label">
+        <span class="num">02</span>
+        <span class="title">Key angles</span>
+        <span class="hint">One per line</span>
+      </div>
+      <textarea id="anglesInput" placeholder="Enter the key angles from this PR, one per line.&#10;&#10;Example:&#10;Soft Space is the first SoftPOS provider in Southeast Asia to achieve EMVCo Level 1 certification&#10;RCBC is the first commercial bank in the Philippines to deploy SoftPOS&#10;The partnership enables merchants to accept contactless payments without dedicated hardware" rows="6"></textarea>
+      <p class="field-hint">These are used to measure message penetration in organic coverage. Distribution pickups are excluded from angle scoring.</p>
+    </div>
+
+    <!-- 03 — Coverage articles -->
+    <div class="card">
+      <div class="card-label">
+        <span class="num">03</span>
+        <span class="title">Coverage articles</span>
+        <span class="hint" id="articleCount">0 articles added</span>
+      </div>
+      <div class="article-list" id="articleList"></div>
+      <button class="add-btn" onclick="addArticle()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Add article
+      </button>
+    </div>
+
+    <!-- 04 — LinkedIn captions -->
+    <div class="card">
+      <div class="card-label">
+        <span class="num">04</span>
+        <span class="title">LinkedIn reposts <span class="optional-badge">optional</span></span>
+        <span class="hint">Captions from people who shared your PR</span>
+      </div>
+      <textarea id="linkedinCaptions" placeholder="Paste LinkedIn captions here, one per line or separated by a blank line.&#10;&#10;Example:&#10;Excited to share that Soft Space and RCBC have partnered to bring SoftPOS to the Philippines...&#10;&#10;This is a big deal for offline payments in Southeast Asia..." rows="5"></textarea>
+      <p class="field-hint">These reveal which angles resonated most with your audience unprompted.</p>
+    </div>
+
+    <div class="submit-area">
+      <button class="analyze-btn" id="analyzeBtn" onclick="submitForm()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M9 4l4 4-4 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Analyze coverage
+      </button>
+      <p class="submit-note">Fetches articles and runs GPT analysis.<br>Takes ~20–40 seconds.</p>
+    </div>
+  </div>
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-title">Analyzing coverage…</div>
+    <div class="loading-sub">Fetching articles and running AI analysis. Usually takes 20–40 seconds.</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       REPORT
+  ═══════════════════════════════════════════════════ -->
+  <div class="report" id="report">
+
+    <div class="report-header">
+      <div class="report-header-left">
+        <div class="dot"></div>
+        <h2>Analysis complete</h2>
+      </div>
+      <button class="pdf-btn" onclick="downloadPDF()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 10v1a1 1 0 001 1h8a1 1 0 001-1v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download PDF
+      </button>
+    </div>
+
+    <!-- Metric cards -->
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-label">Total coverage</div>
+        <div class="metric-value" id="m-total">—</div>
+        <div class="metric-sub" id="m-total-sub">articles</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Distribution</div>
+        <div class="metric-value" id="m-distribution">—</div>
+        <div class="metric-sub">wire / syndicated</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Organic / Earned</div>
+        <div class="metric-value" id="m-organic">—</div>
+        <div class="metric-sub">genuine editorial pickups</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Avg retained (organic)</div>
+        <div class="metric-value" id="m-retention">—</div>
+        <div class="metric-sub">of PR body kept</div>
+      </div>
+    </div>
+
+    <!-- Section 1 — Executive Summary -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-num">01</span> Executive Summary</div>
+      <div class="summary-text" id="summary-display"></div>
+    </div>
+
+    <!-- Section 2 — Coverage Summary -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-num">02</span> Coverage Summary</div>
+      <div class="coverage-grid" id="coverage-grid"></div>
+    </div>
+
+    <!-- Section 3 — Message Penetration -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-num">03</span> Message Penetration</div>
+      <div class="scope-note">Scoped to organic and earned coverage only — not applicable to distribution pickups.</div>
+      <div id="message-penetration-display"></div>
+    </div>
+
+    <!-- Section 4 — Audience Response -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-num">04</span> Audience Response</div>
+      <div class="gsc-placeholder">
+        <div class="gsc-label">GSC data required</div>
+        <div class="gsc-note" id="audience-note">Pull impressions and clicks from Google Search Console for a defined window before and after publication dates. Frame findings as correlation, not causation.</div>
+      </div>
+    </div>
+
+    <!-- Section 5 — Key Learnings -->
+    <div class="section">
+      <div class="section-title"><span class="section-title-num">05</span> Key Learnings &amp; Recommendations</div>
+      <div class="learnings-grid" id="key-learnings-display"></div>
+    </div>
+
+    <!-- LinkedIn analysis (conditional) -->
+    <div class="section" id="linkedin-section" style="display:none;">
+      <div class="section-title">LinkedIn Resonance</div>
+      <div class="linkedin-row" id="linkedin-display"></div>
+    </div>
+
+  </div><!-- /report -->
+
+</div><!-- /shell -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+  let articleCount = 0;
+
+  // !! Update to your production webhook URL (not webhook-test) — workflow must be Active
+  const N8N_WEBHOOK_URL = 'https://ralexo1881.app.n8n.cloud/webhook/7ce89ff8-5b9a-4a06-9865-c072100a4867';
+
+  const OUTLET_TYPES = [
+    'Distribution',
+    'Wire/Newswire',
+    'Trade/Industry',
+    'Tech Press',
+    'Business Press',
+  ];
+
+  function addArticle() {
+    articleCount++;
+    const id = 'article-' + articleCount;
+    const item = document.createElement('div');
+    item.className = 'article-item';
+    item.id = id;
+    const typeOptions = OUTLET_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+    item.innerHTML = `
+      <div class="article-header">
+        <span class="article-num">#${articleCount}</span>
+        <button class="delete-btn" onclick="removeArticle('${id}')" title="Remove">×</button>
+      </div>
+      <div class="article-fields">
+        <div class="field-group field-full">
+          <span class="field-label">Article URL</span>
+          <input type="text" class="article-url-input" placeholder="https://..." data-field="url" />
+        </div>
+        <div class="field-group">
+          <span class="field-label">Outlet name</span>
+          <input type="text" placeholder="e.g. Finextra" data-field="outlet" />
+        </div>
+        <div class="field-group">
+          <span class="field-label">Outlet type</span>
+          <select data-field="type">
+            <option value="">Select type…</option>
+            ${typeOptions}
+          </select>
+        </div>
+        <div class="field-group" style="justify-content:flex-end;">
+          <span class="field-label">Monitored outlet?</span>
+          <label class="toggle-pill">
+            <input type="checkbox" data-field="monitored" />
+            <span class="toggle-switch"></span>
+            <span class="toggle-text">We pitched this outlet</span>
+          </label>
+        </div>
+        <div class="field-group field-full" style="margin-top:2px;">
+          <span class="field-label">Article text <span class="optional-badge">paste if URL is blocked</span></span>
+          <textarea data-field="articleText" placeholder="Paste article text here if the URL cannot be fetched (e.g. Cloudflare-protected sites)." rows="3" style="min-height:70px;font-size:13px;"></textarea>
+        </div>
+      </div>`;
+    document.getElementById('articleList').appendChild(item);
+    updateCount();
+    setTimeout(() => { const input = item.querySelector('input[type="text"]'); if (input) input.focus(); }, 50);
+  }
+
+  function removeArticle(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-4px)';
+      el.style.transition = 'opacity 0.15s, transform 0.15s';
+      setTimeout(() => { el.remove(); updateCount(); }, 150);
+    }
+  }
+
+  function updateCount() {
+    const n = document.querySelectorAll('.article-item').length;
+    document.getElementById('articleCount').textContent =
+      n === 0 ? '0 articles added' : n === 1 ? '1 article added' : `${n} articles added`;
+  }
+
+  function collectArticles() {
+    const articles = [];
+    document.querySelectorAll('.article-item').forEach((item, idx) => {
+      const url = item.querySelector('[data-field="url"]')?.value.trim() || '';
+      const outlet = item.querySelector('[data-field="outlet"]')?.value.trim() || '';
+      const type = item.querySelector('[data-field="type"]')?.value || '';
+      const monitored = item.querySelector('[data-field="monitored"]')?.checked || false;
+      const articleText = item.querySelector('[data-field="articleText"]')?.value.trim() || null;
+      if (url) articles.push({ index: idx + 1, url, outlet, type, monitored, articleText });
+    });
+    return articles;
+  }
+
+  function collectAngles() {
+    const raw = document.getElementById('anglesInput').value.trim();
+    if (!raw) return [];
+    return raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  }
+
+  function validate() {
+    if (!document.getElementById('prCopy').value.trim()) return 'Please paste your PR copy before analyzing.';
+    const articles = collectArticles();
+    if (articles.length === 0) return 'Please add at least one article URL.';
+    return null;
+  }
+
+  async function submitForm() {
+    hideError();
+    const error = validate();
+    if (error) { showError(error); return; }
+
+    const linkedinRaw = document.getElementById('linkedinCaptions').value.trim();
+    const payload = {
+      prCopy: document.getElementById('prCopy').value.trim(),
+      angles: collectAngles(),
+      articles: collectArticles(),
+      linkedinCaptions: linkedinRaw || null
+    };
+
+    setLoading(true);
+    try {
+      const res = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const report = await res.json();
+      setLoading(false);
+      renderReport(report);
+    } catch (err) {
+      setLoading(false);
+      showError('Could not reach the analysis server. Make sure your n8n workflow is Active. (' + err.message + ')');
+    }
+  }
+
+  function setLoading(on) {
+    document.getElementById('formArea').style.display = on ? 'none' : 'block';
+    document.getElementById('loadingOverlay').classList.toggle('active', on);
+    document.getElementById('analyzeBtn').disabled = on;
+    if (!on) document.getElementById('report').classList.remove('active');
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  REPORT RENDERER
+  // ═══════════════════════════════════════════════════
+  function renderReport(data) {
+    const cs = data.coverage_summary || {};
+    const mp = data.message_penetration || {};
+    const articles = data.articles || [];
+
+    // ── Metric cards
+    const total = cs.total_coverage || articles.length || 0;
+    const distribution = cs.distribution_count ?? 0;
+    const organic = cs.organic_count ?? (total - distribution);
+    const avgRet = mp.avg_body_retention_pct;
+
+    document.getElementById('m-total').textContent = total;
+    document.getElementById('m-distribution').textContent = distribution;
+    document.getElementById('m-organic').textContent = organic;
+    document.getElementById('m-retention').textContent = avgRet != null ? avgRet + '%' : '—';
+
+    // ── Section 1: Executive Summary
+    document.getElementById('summary-display').textContent = data.executive_summary || '';
+
+    // ── Section 2: Coverage Summary
+    const typeBreakdown = cs.type_breakdown || {};
+    document.getElementById('coverage-grid').innerHTML = `
+      <div class="cov-block">
+        <div class="cov-block-label">Coverage type</div>
+        <div class="cov-split">
+          <div class="cov-split-item blue">
+            <div class="cov-split-val">${distribution}</div>
+            <div class="cov-split-lbl">Distribution</div>
+          </div>
+          <div class="cov-split-item green">
+            <div class="cov-split-val">${organic}</div>
+            <div class="cov-split-lbl">Organic / Earned</div>
+          </div>
+        </div>
+      </div>
+      <div class="cov-block">
+        <div class="cov-block-label">Outlet type breakdown</div>
+        <div class="cov-split" style="flex-wrap:wrap;gap:10px;">
+          ${Object.entries(typeBreakdown).map(([type, outlets]) =>
+            `<div class="cov-split-item">
+              <div class="cov-split-val">${outlets.length}</div>
+              <div class="cov-split-lbl">${type}</div>
+            </div>`
+          ).join('')}
+        </div>
+      </div>
+      <div class="cov-block">
+        <div class="cov-block-label">Estimated reach</div>
+        ${cs.estimated_reach
+          ? `<div class="cov-split"><div class="cov-split-item green"><div class="cov-split-val">${cs.estimated_reach.toLocaleString()}</div><div class="cov-split-lbl">readers (50% discounted)</div></div></div>
+             ${cs.reach_unmatched_outlets ? `<div style="font-size:11px;color:var(--text-dim);margin-top:6px;">Not matched in Airtable: ${cs.reach_unmatched_outlets.join(', ')}</div>` : ''}`
+          : `<div class="reach-placeholder">Requires v4 workflow + Airtable outlet table with readership figures.</div>`}
+      </div>
+    `;
+
+    // ── Section 3: Message Penetration
+    const angleAdoption = mp.angle_adoption || [];
+    const patternNote = mp.pattern_note || '';
+    const organicCount = cs.organic_count ?? organic;
+    if (organicCount < 3) {
+      document.getElementById('message-penetration-display').innerHTML =
+        `<div style="font-size:13px;color:var(--text-dim);font-style:italic;">Not enough organic coverage to analyse message penetration — minimum 3 earned outlets required. This cycle has ${organicCount}.</div>`;
+    } else if (angleAdoption.length > 0) {
+      document.getElementById('message-penetration-display').innerHTML =
+        angleAdoption.map(a => {
+          const pct = a.adoption_rate || 0;
+          const barClass = pct >= 66 ? 'high' : pct >= 33 ? 'mid' : 'low';
+          const adoptedTags = (a.adopted_by || []).map(o => `<span class="angle-tag adopted">${o}</span>`).join('');
+          const partialTags = (a.partial_by || []).map(o => `<span class="angle-tag partial">${o} (partial)</span>`).join('');
+          const droppedTags = (a.dropped_by || []).map(o => `<span class="angle-tag dropped">${o}</span>`).join('');
+          return `<div class="angle-row">
+            <div class="angle-name">${a.angle}</div>
+            <div class="angle-bar-wrap">
+              <div class="angle-bar-track"><div class="angle-bar-fill ${barClass}" style="width:${pct}%"></div></div>
+              <span class="angle-pct">${pct}%</span>
+            </div>
+            <div class="angle-outlets">${adoptedTags}${partialTags}${droppedTags}</div>
+          </div>`;
+        }).join('') +
+        (patternNote ? `<div class="pattern-note">${patternNote}</div>` : '');
+    } else {
+      document.getElementById('message-penetration-display').innerHTML =
+        `<div style="font-size:13px;color:var(--text-dim);font-style:italic;">No angle data — either no angles were provided or all articles are distribution pickups.</div>` +
+        (patternNote ? `<div class="pattern-note">${patternNote}</div>` : '');
+    }
+
+    // ── Section 5: Audience Response (GSC placeholder)
+    if (data.audience_response && data.audience_response.note) {
+      document.getElementById('audience-note').textContent = data.audience_response.note;
+    }
+
+    // ── Section 6: Key Learnings
+    const kl = data.key_learnings || {};
+    const lookingBack = kl.looking_back || [];
+    const nextTime = kl.next_time || [];
+    document.getElementById('key-learnings-display').innerHTML = `
+      <div>
+        <div class="learnings-col-label back">Looking back</div>
+        ${lookingBack.length > 0
+          ? lookingBack.map(l => `<div class="learning-item"><div class="learning-dot back"></div><div class="learning-text">${l}</div></div>`).join('')
+          : '<div style="font-size:13px;color:var(--text-dim);font-style:italic;">No data.</div>'}
+      </div>
+      <div>
+        <div class="learnings-col-label forward">Next time</div>
+        ${nextTime.length > 0
+          ? nextTime.map(l => `<div class="learning-item"><div class="learning-dot forward"></div><div class="learning-text">${l}</div></div>`).join('')
+          : '<div style="font-size:13px;color:var(--text-dim);font-style:italic;">No data.</div>'}
+      </div>`;
+
+    // ── LinkedIn
+    const linkedinItems = data.linkedin_analysis || [];
+    if (linkedinItems.length > 0) {
+      document.getElementById('linkedin-section').style.display = 'block';
+      document.getElementById('linkedin-display').innerHTML = linkedinItems.map(l => `
+        <div class="linkedin-item">
+          <div class="linkedin-caption">"${l.caption}"</div>
+          <div class="linkedin-insight"><strong>Lead angle:</strong> ${l.lead_angle}</div>
+          ${l.insight ? `<div class="linkedin-insight" style="margin-top:4px;">${l.insight}</div>` : ''}
+        </div>`).join('');
+    }
+
+    document.getElementById('report').classList.add('active');
+    document.getElementById('report').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function downloadPDF() {
+    const reportEl = document.getElementById('report');
+    const opt = {
+      margin: [10, 10, 10, 10],
+      filename: 'soft-space-pr-impact-report.pdf',
+      image: { type: 'jpeg', quality: 0.97 },
+      html2canvas: { scale: 2, backgroundColor: '#0e0f11', useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+    html2pdf().set(opt).from(reportEl).save();
+  }
+
+  function toggleOutlet(id) {
+    const card = document.getElementById(id);
+    if (card) card.classList.toggle('open');
+  }
+
+  function showError(msg) {
+    document.getElementById('errorText').textContent = msg;
+    document.getElementById('errorBanner').classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function hideError() {
+    document.getElementById('errorBanner').classList.remove('active');
+  }
+</script>
+</body>
+</html>
